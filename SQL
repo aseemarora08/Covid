@@ -43,4 +43,36 @@ ORDER BY
 OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
 
 
--- After Considerings
+-- After Considering the Countries (location) with highest death rate, lets see the vaccine campaign in those countries
+
+
+select * from vaccination;
+
+-- Selecting relevant columns and summing total number of vaccinated people
+SELECT    
+    iso_code,
+    location,
+    SUM(people_fully_vaccinated) AS total_vaccinated
+FROM
+    vaccination
+GROUP BY
+    iso_code, location;
+
+-- Create a new table (if it doesn't exist) to store the vaccination results
+CREATE TABLE total_vaccinated_results (
+    iso_code VARCHAR(255),
+    location VARCHAR(255),
+    total_vaccinated FLOAT);
+
+-- Insert the results of your query into the new table
+INSERT INTO total_vaccinated_results (iso_code, location, total_vaccinated)
+SELECT
+    iso_code,
+    location,
+    SUM(people_fully_vaccinated) AS total_vaccinated
+FROM
+    vaccination
+GROUP BY
+    iso_code, location;
+
+-- Creating an Inner Join for further compution
