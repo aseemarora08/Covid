@@ -1,0 +1,46 @@
+-- Active: 1701846489377@@127.0.0.1@3306@Covid
+SELECT * FROM deaths;
+
+--Calculating  Deathrate by Countries (10 Countries)
+SELECT    
+    iso_code,
+    location,
+    SUM(total_cases) AS total_cases,
+    SUM(total_deaths) AS total_deaths,
+    (SUM(total_deaths) / SUM(total_cases)) * 100 AS death_rate
+FROM
+    deaths
+GROUP BY
+    iso_code, location
+ORDER BY
+    death_rate DESC
+OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+
+-- Create a new table (if it doesn't exist) to store the results
+CREATE TABLE death_rate_results (
+    iso_code VARCHAR(255),
+    location VARCHAR(255),
+    total_cases BIGINT,
+    total_deaths INT,
+    death_rate DECIMAL(10, 2)
+);
+
+
+-- Insert the results of your query into the new table
+INSERT INTO death_rate_results (iso_code, location, total_cases, total_deaths, death_rate)
+SELECT
+    iso_code,
+    location,
+    SUM(total_cases) AS total_cases,
+    SUM(total_deaths) AS total_deaths,
+    (SUM(total_deaths) / SUM(total_cases)) * 100 AS death_rate
+FROM
+    deaths
+GROUP BY
+    iso_code, location
+ORDER BY
+    death_rate DESC
+OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+
+
+-- After Considerings
