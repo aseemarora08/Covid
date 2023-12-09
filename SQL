@@ -38,3 +38,46 @@ SELECT
     WHERE TotalVaccination.total_vaccinated IS NOT NULL AND DeathRateCTE.death_rate IS NOT NULL;
 
 SELECT * FROM vaccine_death_rates
+
+-- Focusing now on Italy as despite having a high vaccination rate it had highest death rate.
+
+-- CREATE TABLE vaccine_death_time AS
+WITH WeeklyCases AS (
+    SELECT
+        iso_code,
+        location,
+        COALESCE(DATE_FORMAT(MIN(date), '%Y-%m-%d'), 0) AS weekly_date,
+        COALESCE(AVG(people_vaccinated), 0) AS people_vaccinated_weekly,
+        AVG(people_fully_vaccinated) AS people_fully_vaccinated_weekly
+    FROM
+        vaccination
+    GROUP BY
+        iso_code, location, WEEK(date)  -- Include 'location' in the GROUP BY clause
+),
+WeeklyDeaths AS (
+    SELECT
+        iso_code,
+        location,
+        DATE_FORMAT(MIN(date), '%Y-%m-%d') AS weekly_date,
+        AVG(total_deaths) AS total_deaths_weekly,
+        AVG(total_cases) AS total_cases_weekly
+    FROM
+        deaths
+    GROUP BY
+        iso_code, location, WEEK(date)  -- Include 'location' in the GROUP BY clause
+)
+SELECT
+    WeeklyCases.iso_code,
+    WeeklyCases.location,
+    COALESCE(WeeklyCases.weekly_date, WeeklyDeaths.weekly_date) AS date,
+    COALESCE(WeeklyCases.people_vaccinated_weekly, 0) AS people_vaccinated_weekly,
+    COALESCE(WeeklyCases.people_fully_vaccinated_weekly, 0) AS people_fully_vaccinated_weekly,
+    COALESCE(WeeklyDeaths.total_deaths_weekly, 0) AS total_deaths_weekly,
+    COALESCE(WeeklyDeaths.total_cases_weekly, 0) AS total_cases_weekly
+FROM WeeklyCases
+LEFT JOIN
+    WeeklyDeaths ON WeeklyCases.weekly_date = WeeklyDeaths.weekly_date
+ORDER BY date ASC;
+
+
+-- select* from weeklycases;
