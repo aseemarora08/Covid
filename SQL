@@ -2,8 +2,9 @@
 SELECT * FROM deaths;
 SELECT * FROM vaccination;
 
--- Creating a new temporary table "TotalVaccinated"
-
+-- The SQL code creates a table named vaccine_death_rates by calculating the average total vaccinated, death rate, and
+-- vaccination rate (total vaccinated / population * 100) for each location. It combines data from the vaccination and 
+-- deaths tables using Common Table Expressions (CTEs) and filters out rows where necessary data is missing.
 CREATE TABLE vaccine_death_rates AS
 WITH TotalVaccination AS (
     SELECT
