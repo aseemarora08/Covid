@@ -1,120 +1,39 @@
--- Active: 1701846489377@@127.0.0.1@3306@Covid
+-- -- Active: 1701846489377@@127.0.0.1@3306@Covid
 SELECT * FROM deaths;
+SELECT * FROM vaccination;
 
---Calculating  Deathrate by Countries (10 Countries)
-SELECT    
-    iso_code,
-    location,
-    AVG(population) AS population,
-    AVG(total_cases) AS total_cases,
-    AVG(total_deaths) AS total_deaths,
-    (AVG(total_deaths) / AVG(total_cases)) * 100 AS death_rate
-FROM
-    deaths
-GROUP BY
-    iso_code, location
-ORDER BY
-    death_rate DESC;
+-- Creating a new temporary table "TotalVaccinated"
 
--- Create a new table (if it doesn't exist) to store the results
-CREATE TABLE death_rate_results (
-    iso_code VARCHAR(255),
-    location VARCHAR(255),
-    population BIGINT,
-    total_cases BIGINT,
-    total_deaths INT,
-    death_rate DECIMAL(10, 2)
-);
+CREATE TABLE vaccine_death_rates AS
+WITH TotalVaccination AS (
+    SELECT
+        iso_code,
+        location,
+        AVG(people_fully_vaccinated) AS total_vaccinated
+    FROM
+        vaccination
+    GROUP BY
+        iso_code, location
+), DeathRateCTE AS (
+    SELECT    
+        iso_code,
+        location,
+        AVG(population) AS population,
+        AVG(total_cases) AS total_cases,
+        AVG(total_deaths) AS total_deaths,
+        (AVG(total_deaths) / AVG(total_cases)) * 100 AS death_rate
+    FROM
+        deaths
+    GROUP BY
+        iso_code, location
+)
+SELECT 
+    TotalVaccination.iso_code,
+    TotalVaccination.location,
+    DeathRateCTE.death_rate,
+    (TotalVaccination.total_vaccinated / DeathRateCTE.population) * 100 AS vaccination_rate
+    FROM TotalVaccination INNER JOIN
+    DeathRateCTE ON TotalVaccination.iso_code = DeathRateCTE.iso_code
+    WHERE TotalVaccination.total_vaccinated IS NOT NULL AND DeathRateCTE.death_rate IS NOT NULL;
 
-
--- Insert the results of your query into the new table
-INSERT INTO death_rate_results (iso_code, location, population, total_cases, total_deaths, death_rate)
-SELECT    
-    iso_code,
-    location,
-    AVG(population) AS population,
-    AVG(total_cases) AS total_cases,
-    AVG(total_deaths) AS total_deaths,
-    (AVG(total_deaths) / AVG(total_cases)) * 100 AS death_rate
-FROM
-    deaths
-GROUP BY
-    iso_code, location
-ORDER BY
-    death_rate DESC;
-
--- Create a new table with distinct rows
-CREATE TABLE death_rate AS
-SELECT DISTINCT *
-FROM death_rate_results;
-
-select * from death_rate
-
--- Drop the old table
-
-DROP TABLE death_rate_results;
-
--- Rename the new table to the original table name
-ALTER TABLE death_rate
-RENAME TO death_rate_results;
-
-
--- After Considering the Countries (location) with highest death rate, lets see the vaccine campaign in those countries
-
--- Selecting relevant columns and summing total number of vaccinated people
-SELECT    
-    iso_code,
-    location,
-    AVG(people_fully_vaccinated) AS total_vaccinated
-FROM
-    vaccination
-GROUP BY
-    iso_code, location;
-
--- Create a new table (if it doesn't exist) to store the vaccination results
-CREATE TABLE total_vaccinated_results (
-    iso_code VARCHAR(255),
-    location VARCHAR(255),
-    total_vaccinated FLOAT);
-
--- Insert the results of your query into the new table
-INSERT INTO total_vaccinated_results (iso_code, location, total_vaccinated)
-SELECT
-    iso_code,
-    location,
-    SUM(people_fully_vaccinated) AS total_vaccinated
-FROM
-    vaccination
-GROUP BY
-    iso_code, location;
-
-
--- Creating an Inner Join for further compution
--- Check data in total_vaccinated_results
-SELECT * FROM total_vaccinated_results;
-
--- Check data in death_rate_results
-SELECT * FROM death_rate_results;
-
-SELECT
-    t.iso_code,
-    t.location,
-    t.total_vaccinated,
-    d.total_cases,
-    d.total_deaths,
-    d.death_rate,
-    d.population,
-    (total_vaccinated/population)*100 AS vaccination_rate
-FROM
-    total_vaccinated_results t
-LEFT JOIN
-    death_rate_results d ON t.iso_code = d.iso_code
-WHERE
-    t.iso_code IS NOT NULL
-    AND t.location IS NOT NULL
-    AND t.total_vaccinated IS NOT NULL
-    AND d.total_cases IS NOT NULL
-    AND d.population IS NOT NULL
-    AND d.total_deaths IS NOT NULL
-    AND d.death_rate IS NOT NULL;;
-
+SELECT * FROM vaccine_death_rates
