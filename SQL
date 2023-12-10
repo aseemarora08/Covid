@@ -1,4 +1,5 @@
 -- -- Active: 1701846489377@@127.0.0.1@3306@Covid
+-- Reading through the dataset
 SELECT * FROM deaths;
 SELECT * FROM vaccination;
 
