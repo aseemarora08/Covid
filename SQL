@@ -83,15 +83,16 @@ ORDER BY date ASC;
 
 -- This SQL query brings together information from two tables, one about COVID-19 vaccinations and the other about deaths. 
 -- It's designed to give a closer look at different places (locations) and how they've been affected. The query calculates 
--- the average number of people fully vaccinated and total deaths for each location. By using a mix of join operations, it ensures 
+-- the number of people fully vaccinated and total deaths for each location. By using a mix of join operations, it ensures 
 -- we get a complete picture even when some data might be missing in one table or the other. This helps us see how 
 -- vaccination rates and deaths relate across different places, providing valuable insights into the impact of COVID-19 on various locations.
 
+CREATE TABLE geograpraphy_summary AS
 WITH Vaccination_Location AS (
     SELECT
         iso_code,
         location,
-        AVG(people_fully_vaccinated) AS population_vaccination
+        MAX(people_fully_vaccinated) AS population_vaccination
     FROM
         vaccination
     GROUP BY
@@ -101,7 +102,7 @@ Death_Location AS (
     SELECT
         iso_code,
         location,
-        AVG(total_deaths) AS total_deaths
+        MAX(total_deaths) AS total_deaths
     FROM
         deaths
     GROUP BY
@@ -126,3 +127,22 @@ FROM
     Vaccination_Location VL
 RIGHT JOIN
     Death_Location DL ON VL.iso_code = DL.iso_code AND VL.location = DL.location;
+
+-- The provided SQL code creates a new table named `WeeklyStatistics` to study the relationship between average hospital admissions and 
+-- deaths globally. The code calculates, on a weekly basis, the maximum total deaths and the average weekly hospital admissions using data 
+-- from the existing `deaths` table. The resulting table provides insights into the temporal patterns and potential correlations 
+-- between these two critical indicators on a global scale.
+CREATE TABLE correlation_death_admin AS
+WITH WeeklyStats AS (
+    SELECT 
+        WEEK(date) AS week_number,
+        MAX(total_deaths) AS total_deaths,
+        AVG(weekly_hosp_admissions) AS weekly_hospital_admission
+    FROM
+        deaths
+    GROUP BY
+        week_number
+)
+SELECT *
+FROM WeeklyStats
+ORDER BY week_number;
