@@ -39,9 +39,11 @@ SELECT
 
 SELECT * FROM vaccine_death_rates
 
--- Focusing now on Italy as despite having a high vaccination rate it had highest death rate.
+-- The SQL statement creates a table named `vaccine_death_time` by combining weekly vaccination and death data. 
+-- It utilizes two Common Table Expressions (CTEs) named `WeeklyCases` and `WeeklyDeaths`. The resulting table 
+-- employs `LEFT JOIN` to merge the data based on the weekly date.
 
--- CREATE TABLE vaccine_death_time AS
+CREATE TABLE vaccine_death_time AS
 WITH WeeklyCases AS (
     SELECT
         iso_code,
@@ -79,5 +81,48 @@ LEFT JOIN
     WeeklyDeaths ON WeeklyCases.weekly_date = WeeklyDeaths.weekly_date
 ORDER BY date ASC;
 
+-- This SQL query brings together information from two tables, one about COVID-19 vaccinations and the other about deaths. 
+-- It's designed to give a closer look at different places (locations) and how they've been affected. The query calculates 
+-- the average number of people fully vaccinated and total deaths for each location. By using a mix of join operations, it ensures 
+-- we get a complete picture even when some data might be missing in one table or the other. This helps us see how 
+-- vaccination rates and deaths relate across different places, providing valuable insights into the impact of COVID-19 on various locations.
 
--- select* from weeklycases;
+WITH Vaccination_Location AS (
+    SELECT
+        iso_code,
+        location,
+        AVG(people_fully_vaccinated) AS population_vaccination
+    FROM
+        vaccination
+    GROUP BY
+        iso_code, location
+),
+Death_Location AS (
+    SELECT
+        iso_code,
+        location,
+        AVG(total_deaths) AS total_deaths
+    FROM
+        deaths
+    GROUP BY
+        iso_code, location
+)
+SELECT
+    VL.iso_code,
+    VL.location,
+    VL.population_vaccination,
+    DL.total_deaths
+FROM
+    Vaccination_Location VL
+LEFT JOIN
+    Death_Location DL ON VL.iso_code = DL.iso_code AND VL.location = DL.location
+UNION
+SELECT
+    DL.iso_code,
+    DL.location,
+    VL.population_vaccination,
+    DL.total_deaths
+FROM
+    Vaccination_Location VL
+RIGHT JOIN
+    Death_Location DL ON VL.iso_code = DL.iso_code AND VL.location = DL.location;
